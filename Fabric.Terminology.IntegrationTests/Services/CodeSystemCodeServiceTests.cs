@@ -115,12 +115,13 @@
             codeSystems[0].Should().Be(codeSystemGuid);
         }
 
-        [Fact(Skip = "Long running, run manually")]
+        [Fact]
         public void GetCodeSystemCodesBatch()
         {
             // Arrange
             var sample = GetSampleCodes().ToList();
             sample.Should().NotBeEmpty();
+            this.Output.WriteLine($"Code count: {sample.Count}");
 
             // Act
             var codes = this.Profiler.ExecuteTimed(async () => await this.codeSystemCodeService.GetCodeSystemCodesBatchAsync(sample));

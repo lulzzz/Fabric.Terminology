@@ -37,7 +37,14 @@
 
         public Task<IBatchCodeSystemCodeResult> GetCodeSystemCodesBatchAsync(IEnumerable<string> codes, IEnumerable<Guid> codeSystemGuids)
         {
-            return this.codeSystemCodeRepository.GetCodeSystemCodesBatchAsync(codes, codeSystemGuids);
+            var codesArray = codes as string[] ?? codes.ToArray();
+            if (!codesArray.Any())
+            {
+                var argEx = new ArgumentException($"{nameof(codes)} must have at least one code.");
+                throw argEx;
+            }
+
+            return this.codeSystemCodeRepository.GetCodeSystemCodesBatchAsync(codesArray, codeSystemGuids);
         }
 
         public Task<PagedCollection<ICodeSystemCode>> GetCodeSystemCodesAsync(IPagerSettings settings, bool includeRetired = false)

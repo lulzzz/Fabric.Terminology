@@ -76,20 +76,22 @@
         {
             var codesHash = codes.ToHashSet();
 
-            var found = new List<ICodeSystemCode>();
             var systemGuids = codeSystemGuids as Guid[] ?? codeSystemGuids.ToArray();
 
-            foreach (var batch in codesHash.Batch(500))
-            {
-                var results = await this.GetCodesByBatch(batch.ToList(), systemGuids);
-                var unique = results.Where(r => !found.Exists(f => f.CodeGuid == r.CodeGuid));
-                found.AddRange(unique);
-            }
+           var results = (await this.GetCodesBatchByJoin(codesHash, systemGuids)).ToList();
+
+            //var results = (await Task.WhenAll(
+            //                    codesHash.Batch(1500)
+            //                    .Select(
+            //                        batch =>
+            //                            this.GetCodesByBatch(batch.ToList(), systemGuids)))
+            //              )
+            //              .SelectMany(codeList => codeList).ToList();
 
             return new BatchCodeSystemCodeResult
             {
-                Matches = found,
-                NotFound = codesHash.Where(c => !found.Exists(f => f.Code == c)).ToList()
+                Matches = results,
+                NotFound = codesHash.Where(c => !results.Exists(f => f.Code == c)).ToList()
             };
         }
 
@@ -126,6 +128,45 @@
 
             var factory = new CodeSystemCodeFactory();
             var results = await dtos.ToListAsync();
+
+            return results.Select(factory.Build).ToList();
+        }
+
+        private async Task<IReadOnlyCollection<ICodeSystemCode>> GetCodesBatchByJoin(HashSet<string> codes, IReadOnlyCollection<Guid> codeSystemGuids)
+        {
+            this.sharedContext.ChangeTracker.AutoDetectChangesEnabled = false;
+
+            var batchId = GuidComb.GenerateComb();
+            foreach (var code in codes)
+            {
+                this.sharedContext.BatchCodeQuery.Add(new BatchCodeQueryDto { CodeCD = code, BatchID = batchId });
+            }
+
+            this.sharedContext.ChangeTracker.DetectChanges();
+            this.sharedContext.SaveChanges();
+            this.sharedContext.ChangeTracker.AutoDetectChangesEnabled = true;
+
+            // TODO review not sure this needs to be reset
+            this.sharedContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            var dtos = this.GetBaseQuery(true)
+                .Join(
+                    this.sharedContext.BatchCodeQuery.Where(b => b.BatchID == batchId),
+                    left => left.CodeCD,
+                    right => right.CodeCD,
+                    (left, right) => left);
+
+            if (codeSystemGuids.Any())
+            {
+                dtos = dtos.Where(dto => codeSystemGuids.Contains(dto.CodeSystemGUID));
+            }
+
+            var factory = new CodeSystemCodeFactory();
+            var results = await dtos.ToListAsync();
+
+            this.sharedContext.Database.ExecuteSqlCommand(
+                "DELETE FROM [ClientTerm].[ApiBatchQuery] WHERE BatchID = {0}",
+                batchId);
 
             return results.Select(factory.Build).ToList();
         }

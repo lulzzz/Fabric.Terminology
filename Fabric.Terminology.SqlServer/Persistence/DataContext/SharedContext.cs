@@ -27,6 +27,8 @@
 
         public DbSet<CodeSystemCodeDto> CodeSystemCodes { get; set; }
 
+        public DbSet<BatchCodeQueryDto> BatchCodeQuery { get; set; }
+
         // Used for testing
         internal bool IsInMemory { get; set; }
 
@@ -51,6 +53,9 @@
 
             modelBuilder.Entity<CodeSystemCodeDto>().ToTable("Code", "Terminology")
                 .HasKey(e => e.CodeGUID);
+
+            modelBuilder.Entity<BatchCodeQueryDto>().ToTable("ApiBatchQuery", "ClientTerm");
+            modelBuilder.Entity<BatchCodeQueryDto>().HasKey(e => new { e.BatchID, e.CodeCD });
 
             base.OnModelCreating(modelBuilder);
         }
