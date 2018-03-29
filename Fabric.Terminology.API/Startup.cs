@@ -4,6 +4,7 @@
 
     using AutoMapper;
 
+    using Fabric.Platform.Auth;
     using Fabric.Terminology.API.Configuration;
     using Fabric.Terminology.API.Logging;
     using Fabric.Terminology.API.Models;
@@ -17,9 +18,19 @@
     using Serilog;
     using Serilog.Core;
 
+    using Swagger.ObjectModel;
+
     public class Startup
     {
         private readonly IAppConfiguration appConfig;
+
+        private readonly string[] allowedPaths =
+        {
+            "/",
+            "/swagger/index.html",
+            "/api-docs/swagger.json",
+            "/api-docs"
+        };
 
         public Startup(IHostingEnvironment env)
         {
@@ -33,6 +44,7 @@
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddWebEncoders();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -56,8 +68,16 @@
                     cfg.AddProfile<ValueSetApiProfile>();
                 });
 
+            app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions
+            {
+                Authority = this.appConfig.IdentityServerSettings.Authority,
+                RequireHttpsMetadata = false,
+                ApiName = this.appConfig.IdentityServerSettings.ClientId
+            });
+
             app.UseStaticFiles()
                 .UseOwin()
+                .UseAuthPlatform(this.appConfig.IdentityServerSettings.Scopes, this.allowedPaths)
                 .UseNancy(opt => opt.Bootstrapper = new Bootstrapper(this.appConfig, Log.Logger));
 
             Log.Logger.Information("Fabric.Terminology.API started!");
