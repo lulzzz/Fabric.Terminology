@@ -10,5 +10,7 @@
         public HostingOptions HostingOptions { get; set; }
 
         public IdentityServerConfidentialClientSettings IdentityServerSettings { get; set; }
+
+        public ApplicationInsights ApplicationInsights { get; set; }
     }
 }

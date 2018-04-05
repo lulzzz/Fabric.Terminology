@@ -32,7 +32,7 @@
         {
             this.appConfig = new TerminologyConfigurationProvider().GetAppConfiguration(env.ContentRootPath);
 
-            var logger = LogFactory.CreateLogger(new LoggingLevelSwitch());
+            var logger = LogFactory.CreateTraceLogger(new LoggingLevelSwitch(), this.appConfig.ApplicationInsights);
             Log.Logger = logger;
         }
 
@@ -67,7 +67,7 @@
             app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions
             {
                 Authority = this.appConfig.IdentityServerSettings.Authority,
-                RequireHttpsMetadata = false,  // TODO verify this should be true in production
+                RequireHttpsMetadata = false,
                 ApiName = this.appConfig.IdentityServerSettings.ClientId
             });
 
