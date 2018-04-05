@@ -3,6 +3,8 @@
     using AutoMapper;
 
     using Fabric.Platform.Auth;
+    using Fabric.Terminology.API.Bootstrapping;
+    using Fabric.Terminology.API.Bootstrapping.MapperProfiles;
     using Fabric.Terminology.API.Configuration;
     using Fabric.Terminology.API.Logging;
 
