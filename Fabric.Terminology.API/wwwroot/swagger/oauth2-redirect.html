@@ -11,11 +11,7 @@
         var redirectUrl = oauth2.redirectUrl;
         var isValid, qp, arr;
 
-        if (/code|token|error/.test(window.location.hash)) {
-            qp = window.location.hash.substring(1);
-        } else {
-            qp = location.search.substring(1);
-        }
+        qp = (window.location.hash || location.search).substring(1);
 
         arr = qp.split("&")
         arr.forEach(function (v,i,_arr) { _arr[i] = '"' + v.replace('=', '":"') + '"';})
