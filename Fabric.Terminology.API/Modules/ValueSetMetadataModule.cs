@@ -13,7 +13,7 @@
     using Nancy.Swagger.Services;
     using Nancy.Swagger.Services.RouteUtils;
 
-    public class ValueSetMetadataModule : SwaggerMetadataModule
+    public class ValueSetMetadataModule : BaseMetadataModule
     {
         public ValueSetMetadataModule(
             ISwaggerModelCatalog modelCatalog,
@@ -93,7 +93,7 @@
                     ParameterFactory.GetQueryStringStatusCode(),
                     ParameterFactory.GetOrderBy("Name")
                 },
-                new[] { TagsFactory.GetValueSetTag() });
+                new[] { TagsFactory.GetValueSetTag() }).SecurityRequirement(this.OAuth2ReadScopeBuilder);
 
             this.RouteDescriber.DescribeRouteWithParams(
                 "GetValueSetVersions",

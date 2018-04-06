@@ -2,9 +2,9 @@
 {
     using AutoMapper;
 
-    using Fabric.Platform.Auth;
     using Fabric.Terminology.API.Bootstrapping;
     using Fabric.Terminology.API.Bootstrapping.MapperProfiles;
+    using Fabric.Terminology.API.Bootstrapping.Middleware;
     using Fabric.Terminology.API.Configuration;
     using Fabric.Terminology.API.Logging;
 
@@ -15,10 +15,13 @@
     using Nancy.Owin;
     using Serilog;
     using Serilog.Core;
+    using ILogger = Serilog.ILogger;
 
     public class Startup
     {
         private readonly IAppConfiguration appConfig;
+
+        private ILogger logger;
 
         private readonly string[] allowedPaths =
         {
@@ -32,8 +35,7 @@
         {
             this.appConfig = new TerminologyConfigurationProvider().GetAppConfiguration(env.ContentRootPath);
 
-            var logger = LogFactory.CreateTraceLogger(new LoggingLevelSwitch(), this.appConfig.ApplicationInsights);
-            Log.Logger = logger;
+            this.logger = LogFactory.CreateTraceLogger(new LoggingLevelSwitch(), this.appConfig.ApplicationInsights);
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -46,17 +48,11 @@
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IApplicationLifetime appLifetime)
         {
-            loggerFactory.AddSerilog();
+            loggerFactory.AddSerilog(this.logger);
 
             Log.Logger.Information("Fabric.Terminology.API starting.");
 
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
             Log.Logger.Information("Initializing AutoMapper");
-
             Mapper.Initialize(cfg =>
                 {
                     cfg.AddProfile<CodeSystemApiProfile>();
@@ -74,7 +70,7 @@
             app.UseStaticFiles()
                 .UseOwin()
                 .UseAuthPlatform(this.appConfig.IdentityServerSettings.Scopes, this.allowedPaths)
-                .UseNancy(opt => opt.Bootstrapper = new Bootstrapper(this.appConfig, Log.Logger));
+                .UseNancy(opt => opt.Bootstrapper = new Bootstrapper(this.appConfig, this.logger));
 
             Log.Logger.Information("Fabric.Terminology.API started!");
         }

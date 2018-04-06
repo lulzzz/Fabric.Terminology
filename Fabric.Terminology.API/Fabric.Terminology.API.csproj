@@ -62,6 +62,9 @@
 	<Compile Update="Extensions.*.cs">
 		<DependentUpon>Extensions.cs</DependentUpon>
 	</Compile>
+    <Compile Update="Constants.*.cs">
+      <DependentUpon>Constants.cs</DependentUpon>
+    </Compile>
 	</ItemGroup>
   <ItemGroup>
     <Folder Include="Logging\" />

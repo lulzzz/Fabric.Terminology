@@ -1,5 +1,7 @@
 ﻿namespace Fabric.Terminology.API.Bootstrapping
 {
+    using System;
+
     using Fabric.Terminology.API.Configuration;
     using Fabric.Terminology.API.DependencyInjection;
     using Fabric.Terminology.API.Validators;
@@ -18,6 +20,7 @@
     using Serilog;
 
     using Swagger.ObjectModel;
+    using Swagger.ObjectModel.Builders;
 
     internal class Bootstrapper : DefaultNancyBootstrapper
     {
@@ -33,11 +36,7 @@
 
         protected override void ApplicationStartup([NotNull] TinyIoCContainer container, [NotNull] IPipelines pipelines)
         {
-            SwaggerMetadataProvider.SetInfo(
-                "Shared Terminology Data Services",
-                TerminologyVersion.SemanticVersion.ToString(),
-                "Shared Terminology Data Services - Fabric.Terminology.API",
-                new Contact() { EmailAddress = "terminology-api@healthcatalyst.com" });
+            this.InitializeSwaggerMetadata();
 
             base.ApplicationStartup(container, pipelines);
 
@@ -109,6 +108,32 @@
 
             pipelines.AfterRequest.AddItemToEndOfPipeline(
                 x => x.Response.Headers.Add("Access-Control-Allow-Origin", "*"));
+        }
+
+        private void InitializeSwaggerMetadata()
+        {
+            SwaggerMetadataProvider.SetInfo("Fabric Terminology API", TerminologyVersion.SemanticVersion.ToString(),
+                "Fabric.Terminology contains a set of APIs that provides client applications with Shared Terminology data.");
+
+            var securitySchemeBuilder = new Oauth2SecuritySchemeBuilder();
+            securitySchemeBuilder.Flow(Oauth2Flows.Implicit);
+            securitySchemeBuilder.Description("Authentication with Fabric.Identity");
+            securitySchemeBuilder.AuthorizationUrl(@"http://localhost/identity");
+            securitySchemeBuilder.Scope("fabric/terminology.read", "Grants read access to fabric.terminology resources.");
+            securitySchemeBuilder.Scope("fabric/authorization.write", "Grants write access to fabric.terminology resources.");
+            securitySchemeBuilder.Scope("HQCATALYST\\Population Builder", "Temp access - to be removed.");
+            try
+            {
+                SwaggerMetadataProvider.SetSecuritySchemeBuilder(securitySchemeBuilder, "fabric.identity");
+            }
+            catch (ArgumentException ex)
+            {
+                this.logger.Warning("Error configuring Swagger Security Scheme. {exceptionMessage}", ex.Message);
+            }
+            catch (NullReferenceException ex)
+            {
+                this.logger.Warning("Error configuring Swagger Security Scheme: {exceptionMessage", ex.Message);
+            }
         }
     }
 }
